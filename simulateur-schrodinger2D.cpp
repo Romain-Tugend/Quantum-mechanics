@@ -11,8 +11,8 @@
 using namespace std;
 using namespace std::literals::complex_literals;
 
-int Nx=512;
-int Ny=512;
+int Nx=128;
+int Ny=128;
 double L=40.0;
 double T=15.0;
 double dx=L/Nx;
