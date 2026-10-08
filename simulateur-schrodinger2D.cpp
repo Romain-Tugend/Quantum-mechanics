@@ -11,8 +11,9 @@
 using namespace std;
 using namespace std::literals::complex_literals;
 
-int Nx=128;
-int Ny=128;
+///////////////////////////////////////////variables///////////////////////////////////////////
+int Nx=512;
+int Ny=512;
 double L=40.0;
 double T=15.0;
 double dx=L/Nx;
@@ -21,13 +22,11 @@ double dt=0.01;
 int Nt = static_cast<int>(T/dt);
 int nombre_images=T*1.5*24;
 int pas_enregistrement=Nt/nombre_images;
-
-
 double k0x = 5.0; // impulsion initiale vers la droite en +
 double k0y = 0.0; // impulsion initiale vers la droite en +
+//////////////////////////////////////////////////////////////////////////////////////
 
-
-//fonction potentiel
+///////////////////////////////////////////fonction potentiel///////////////////////////////////////////
 double V(double x, double y){
     //double n=std::sqrt(x*x+y*y);
     double x_mur=0.0;
@@ -70,68 +69,72 @@ double masque_arriere_source(double x, double x_source, double largeur = 3.0) {
     if (distance >= largeur) return 0.0;       // au-delà : complètement éteint
     return std::cos((std::numbers::pi / 2.0) * (distance / largeur));
 }
-// Calcule la FFT directe (équivalent à np.fft.fft)
-// input : vecteur de taille Nx contenant les données spatiales psi(xn)
-// output : vecteur de taille Nx qui recevra les coefficients c_ktilde
-void appliquer_fft(const std::vector<std::vector<std::complex<double>>>& input, std::vector<std::vector<std::complex<double>>>& output) {
-    int temp_nx = input.size();
-    int temp_ny = input[0].size();
 
-    fftw_complex *in = (fftw_complex*) fftw_malloc(temp_nx * temp_ny * sizeof(fftw_complex));
-    fftw_complex *out = (fftw_complex*) fftw_malloc(temp_nx * temp_ny * sizeof(fftw_complex));
+///////////////////////////////////////////////////////////////////////////////////////////////////
+class FFT2D
+{
+    private:
+    fftw_complex *in;
+    fftw_complex *out;
+    fftw_plan pfft;
+    fftw_plan pifft;
+
+    public:
+    FFT2D(const FFT2D&) = delete;             
+    FFT2D& operator=(const FFT2D&) = delete;   
+
+    FFT2D(){
+        in = (fftw_complex*) fftw_malloc(Nx * Ny * sizeof(fftw_complex));
+        out = (fftw_complex*) fftw_malloc(Nx * Ny * sizeof(fftw_complex));
+        pfft = fftw_plan_dft_2d(Nx, Ny, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+        pifft = fftw_plan_dft_2d(Nx, Ny, in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
+    }
+    // Calcule la FFT directe (équivalent à np.fft.fft)
+    // input : vecteur de taille Nx contenant les données spatiales psi(xn)
+    // output : vecteur de taille Nx qui recevra les coefficients c_ktilde
+    void appliquer_fft(const std::vector<std::vector<std::complex<double>>>& input, std::vector<std::vector<std::complex<double>>>& output) {
+        // Copie ultra-rapide par ligne
+        std::complex<double>* in_ptr = reinterpret_cast<std::complex<double>*>(in);
+        for (int i = 0; i < Nx; ++i) {
+            std::copy(input[i].begin(), input[i].end(), in_ptr + i * Ny);
+        }
     
-    // Copie ultra-rapide par ligne
-    std::complex<double>* in_ptr = reinterpret_cast<std::complex<double>*>(in);
-    for (int i = 0; i < temp_nx; ++i) {
-        std::copy(input[i].begin(), input[i].end(), in_ptr + i * temp_ny);
-    }
+        fftw_execute(pfft);
 
-    fftw_plan p = fftw_plan_dft_2d(temp_nx, temp_ny, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-    fftw_execute(p);
-
-    // Récupération ultra-rapide par ligne
-    std::complex<double>* out_ptr = reinterpret_cast<std::complex<double>*>(out);
-    for (int i = 0; i < temp_nx; ++i) {
-        std::copy(out_ptr + i * temp_ny, out_ptr + (i + 1) * temp_ny, output[i].begin());
-    }
-
-    fftw_destroy_plan(p);
-    fftw_free(in);
-    fftw_free(out);
-}
-// Calcule la FFT inverse (équivalent à np.fft.ifft)
-// input : coefficients c_ktilde
-// output : données retournées dans l'espace réel psi(xn)
-void appliquer_ifft(const std::vector<std::vector<std::complex<double>>>& input, std::vector<std::vector<std::complex<double>>>& output) {
-    int temp_nx = input.size();
-    int temp_ny = input[0].size();
-
-    fftw_complex *in = (fftw_complex*) fftw_malloc(temp_nx * temp_ny * sizeof(fftw_complex));
-    fftw_complex *out = (fftw_complex*) fftw_malloc(temp_nx * temp_ny * sizeof(fftw_complex));
-
-    std::complex<double>* in_ptr = reinterpret_cast<std::complex<double>*>(in);
-    for (int i = 0; i < temp_nx; ++i) {
-        std::copy(input[i].begin(), input[i].end(), in_ptr + i * temp_ny);
-    }
-
-    fftw_plan p = fftw_plan_dft_2d(temp_nx, temp_ny, in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
-    fftw_execute(p);
-
-    double norm = static_cast<double>(temp_nx * temp_ny);
-    std::complex<double>* out_ptr = reinterpret_cast<std::complex<double>*>(out);
-    for (int i = 0; i < temp_nx; ++i) {
-        std::copy(out_ptr + i * temp_ny, out_ptr + (i + 1) * temp_ny, output[i].begin());
-        // Normalisation de la ligne
-        for (int j = 0; j < temp_ny; ++j) {
-            output[i][j] /= norm;
+        // Récupération ultra-rapide par ligne
+        std::complex<double>* out_ptr = reinterpret_cast<std::complex<double>*>(out);
+        for (int i = 0; i < Nx; ++i) {
+            std::copy(out_ptr + i * Ny, out_ptr + (i + 1) * Ny, output[i].begin());
         }
     }
+    // Calcule la FFT inverse (équivalent à np.fft.ifft)
+    // input : coefficients c_ktilde
+    // output : données retournées dans l'espace réel psi(xn)
+    void appliquer_ifft(const std::vector<std::vector<std::complex<double>>>& input, std::vector<std::vector<std::complex<double>>>& output) {
+        std::complex<double>* in_ptr = reinterpret_cast<std::complex<double>*>(in);
+        for (int i = 0; i < Nx; ++i) {
+            std::copy(input[i].begin(), input[i].end(), in_ptr + i * Ny);
+        }
 
-    fftw_destroy_plan(p);
-    fftw_free(in);
-    fftw_free(out);
-}
+        fftw_execute(pifft);
 
+        double norm = static_cast<double>(Nx * Ny);
+        std::complex<double>* out_ptr = reinterpret_cast<std::complex<double>*>(out);
+        for (int i = 0; i < Nx; ++i) {
+            std::copy(out_ptr + i * Ny, out_ptr + (i + 1) * Ny, output[i].begin());
+            // Normalisation de la ligne
+            for (int j = 0; j < Ny; ++j) {
+                output[i][j] /= norm;
+            }
+        }
+    }
+    ~FFT2D(){
+        fftw_destroy_plan(pifft);
+        fftw_destroy_plan(pfft);
+        fftw_free(in);
+        fftw_free(out);
+    }
+};
 
 std::complex<double> condition_initiale(double x, double y, double sigma, double k0x, double k0y) {
     double x_centre = -12.0; // -gauche; + droite
@@ -188,7 +191,9 @@ int main(int argc, char* argv[]){
     }
 
     
-    std::ofstream fichier_donnees("evolution_schrodinger2D.bin", std::ios::binary);
+    std::ofstream fichier_donnees("evolution_schrodinger2D_mpi.bin", std::ios::binary);
+
+    FFT2D methodefft2d;
 
     for (int t=0; t<Nt; t++){
 
@@ -230,7 +235,7 @@ int main(int argc, char* argv[]){
             }
         }
 
-        appliquer_fft(lf,ck_tilde);
+        methodefft2d.appliquer_fft(lf,ck_tilde);
 
         for (int k=0; k<Nx; k++){
             double k_spectre_x=k_physique_x[k]*(2*std::numbers::pi/L);
@@ -242,7 +247,7 @@ int main(int argc, char* argv[]){
             }
         }
 
-        appliquer_ifft(d2psi_k,lf);
+        methodefft2d.appliquer_ifft(d2psi_k,lf);
     }
 
 
