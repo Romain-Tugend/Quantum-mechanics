@@ -3,9 +3,8 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////// KRONING-PENNEY /////////////////////////////////////////
+//////////////////////////////////// FENTES DE YOUNG //////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
-
 #include "Common.hpp"
 #include "Parametres.hpp"
 #include "Potentiel.hpp"
@@ -16,6 +15,20 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 Parametres param;
+
+std::complex<double> solution_theorique(double x, double y, double t, double sigma, double k0x, double k0y){
+    double x0 = 2.0; 
+    double y0 = 0.0;
+    double xt = x0 * std::cos(t) + k0x * std::sin(t);
+    double yt = y0 * std::cos(t) + k0y * std::sin(t);
+    double kxt = -x0 * std::sin(t) + k0x * std::cos(t);
+    double kyt = -y0 * std::sin(t) + k0y * std::cos(t);
+    double phase_globale = -t;
+    double phase_espace = kxt * (x - xt) + kyt * (y - yt);
+    double phase_action = 0.5 * (kxt*xt + kyt*yt - k0x*x0 - k0y*y0);
+    double gaussienne = std::exp(-((x - xt)*(x - xt) + (y - yt)*(y - yt)) / (2.0 * sigma * sigma));
+    return gaussienne * std::exp(1i * (phase_espace + phase_action + phase_globale));
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////// INITIAL CONDITION /////////////////////////////////////////
@@ -62,8 +75,8 @@ int main(int argc, char* argv[]){
         std::vector<std::complex<double>>Potentiel_V_global(param.Nx*param.Ny);
         std::vector<std::complex<double>>Matrice_k_global(param.Nx*param.Ny);
         std::vector<std::complex<double>>lf_global(param.Nx * param.Ny);
-        //std::ofstream fichier_donnees("evolution_schrodinger2D_mpi.bin", std::ios::binary);
-        //std::ofstream fichier_potentiel("potentiel_2D.bin", std::ios::binary);
+        std::ofstream fichier_donnees("evolution_schrodinger2D_mpi.bin", std::ios::binary);
+        std::ofstream fichier_potentiel("potentiel_2D.bin", std::ios::binary);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////// LOCAL VECTORS //////////////////////////////////////////
@@ -99,11 +112,11 @@ int main(int argc, char* argv[]){
             total_elements += counts[i];
         }
 
-        //std::cout << "My rank is: "<< myRank << " local_n0: "<< methodefft2d.local_n0 <<" local_0_start: "<< methodefft2d.local_0_start <<" alloc_local: "<< methodefft2d.alloc_local;
-        //std::cout << "=======================================================\n";
-        auto debut_fft = std::chrono::high_resolution_clock::now();
+        std::cout << "My rank is: "<< myRank << " local_n0: "<< methodefft2d.local_n0 <<" local_0_start: "<< methodefft2d.local_0_start <<" alloc_local: "<< methodefft2d.alloc_local;
+        std::cout << "=======================================================\n";
+            auto debut_fft = std::chrono::high_resolution_clock::now();
         if (myRank == 0) {
-            //std::ofstream fichier_donnees("evolution_schrodinger2D_mpi.bin", std::ios::binary);
+            std::ofstream fichier_donnees("evolution_schrodinger2D_mpi.bin", std::ios::binary);
             //On change les k pour le repliment du spectre
             for (int k = 0; k < param.Nx; k++) {
                 k<param.Nx/2 ? k_physique_x[k]=k : k_physique_x[k] = (k - param.Nx);
@@ -115,18 +128,18 @@ int main(int argc, char* argv[]){
             
             //maillage spatial et condition initial
             for (int n = 0; n < param.Nx; n++) {
-                double k_spectre_x=k_physique_x[n]*(2*M_PI/param.Lx);
+                double k_spectre_x=k_physique_x[n]*(2*std::numbers::pi/param.Lx);
                 double facteur_x=0.5*k_spectre_x*k_spectre_x;
                 lx[n] = -param.Lx/2.0+n*param.dx;
                 for (int m=0; m< param.Ny; m++){
-                    double k_spectre_y=k_physique_y[m]*(2*M_PI/param.Ly);
+                    double k_spectre_y=k_physique_y[m]*(2*std::numbers::pi/param.Ly);
                     double facteur_y=0.5*k_spectre_y*k_spectre_y;
                     ly[m] = -param.Ly/2.0+m*param.dy;
                     Matrice_k_global[n * param.Ny + m]=std::exp(-1i*(facteur_x+facteur_y)*param.dt); // WE STOCK DATA OF THE K FOR THE CALCULUS OF THE LAPLACIEN WITH THE FFT
                     lf_global[n * param.Ny + m] = condition_initiale(lx[n], ly[m], param.sigma, param.k0x, param.k0y);
                     Potentiel_V_global[n * param.Ny + m]= std::exp(-1i * V(lx[n], ly[m]) * param.dt/2.0); // WE STOCK DATA OF THE POTENTIAL IN A MATRIX
                     double potentiel_norme = std::norm(V(lx[n],ly[m]));
-                    //fichier_potentiel.write(reinterpret_cast<char*>(&potentiel_norme), sizeof(double));
+                    fichier_potentiel.write(reinterpret_cast<char*>(&potentiel_norme), sizeof(double));
                 }
             }
         }
@@ -154,7 +167,7 @@ int main(int argc, char* argv[]){
                     for (int n = 0; n < param.Nx; n++) {
                         for (int m = 0; m < param.Ny; m++) {
                             double densite = std::norm(lf_global[n * param.Ny + m]);
-                            //fichier_donnees.write(reinterpret_cast<char*>(&densite), sizeof(double));
+                            fichier_donnees.write(reinterpret_cast<char*>(&densite), sizeof(double));
                         }
                     }
                 }
@@ -189,8 +202,8 @@ int main(int argc, char* argv[]){
                 0, MPI_COMM_WORLD);
         auto fin_fft = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> temps_total = fin_fft - debut_fft;
-        //fichier_donnees.close();
-        //fichier_potentiel.close();
+        fichier_donnees.close();
+        fichier_potentiel.close();
 
         if (myRank == 0) {
             double somme_carres = 0.0;
@@ -198,12 +211,24 @@ int main(int argc, char* argv[]){
             double proba_finale=0.0;
             double proba_initiale= 0.0;
 
+            // 1. ÉTAPE DE CALCUL DE L'ERREUR EN CORRIGEANT LA PHASE GLOBALE DE STRANG
             for (int n = 0; n < param.Nx; ++n) {
+                double x = lx[n]; 
                 for (int m = 0; m < param.Ny; ++m) {
+                    double y = ly[m]; 
+                    
+                    // Évaluation de la solution théorique (sans le préfacteur comme validé)
+                    std::complex<double> psi_th = solution_theorique(x, y, t_final, param.sigma, param.k0x, param.k0y);
+                    
+                    std::complex<double> diff = lf_global[n * param.Ny + m] - psi_th;
+                    somme_carres += std::norm(diff);
                     proba_finale+= std::norm(lf_global[n * param.Ny + m]);
                     proba_initiale+= std::norm(condition_initiale(lx[n], ly[m], param.sigma, param.k0x, param.k0y));
                 }
             }
+            
+            // Intégration spatiale pour obtenir la norme L2 brute
+            double erreur_L2 = std::sqrt(somme_carres * param.dx * param.dy);
             proba_finale*=param.dx*param.dy;
             proba_initiale*=param.dx*param.dy;
 
@@ -216,8 +241,10 @@ int main(int argc, char* argv[]){
             std::cout << "=======================================================\n";
             std::cout << "Nombre de points : " << static_cast<long long>(param.Nx * param.Ny * param.Nt) << "\n";
             std::cout << "=======================================================\n";
-            //std::cout << "Proba fianle: " << proba_finale <<std::endl;
-            //std::cout << "Proba initiale: " << proba_initiale <<std::endl;
+            std::cout << "Erreur en norme L2: " << std::scientific << std::setprecision(2) << erreur_L2 << std::endl;
+            std::cout << "=======================================================\n";
+            std::cout << "Proba fianle: " << proba_finale <<std::endl;
+            std::cout << "Proba initiale: " << proba_initiale <<std::endl;
         }
     }
         fftw_mpi_cleanup();
