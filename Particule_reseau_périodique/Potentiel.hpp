@@ -23,6 +23,17 @@ double V(double x, double y) {
     
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////// INITIAL CONDITION /////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+std::complex<double> condition_initiale(double x, double y, double sigma, double k0x, double k0y) {
+    double enveloppe = std::exp(-((x - param.x_centre) * (x - param.x_centre)+(y-param.y_centre)*(y-param.y_centre)) / (2.0 * sigma * sigma));
+    std::complex<double> phasex = std::exp(1i * k0x * x);
+    std::complex<double> phasey = std::exp(1i * k0y * y);    
+    return enveloppe * phasex* phasey;
+}
+
 
 
 #endif /*POTENTIEL_HPP*/
