@@ -21,7 +21,6 @@ inline int nbTask;
 
 std::ofstream fichier_donnees("evolution_schrodinger2D_mpi.bin", std::ios::binary);
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////// FUNCTIONS FOR TEST ///////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,13 +44,14 @@ int main(int argc, char* argv[]) {
             param.pas_enregistrement=1;
         }
         FFT2D methodefft2d(param.Nx, param.Ny); 
+        mpi_build_global_vectors();
         ///////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////// LOCAL VECTORS //////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////////
-        std::vector<std::complex<double>> lf_local(methodefft2d.alloc_local);
+        std::vector<std::complex<double>> Mesh_local(methodefft2d.alloc_local);
         std::vector<std::complex<double>> Potentiel_V_local(methodefft2d.alloc_local);
         std::vector<std::complex<double>> Matrice_k_local(methodefft2d.alloc_local);
-        std::vector<std::complex<double>> fourier_local(methodefft2d.alloc_local);
+        std::vector<std::complex<double>> Fourier_local(methodefft2d.alloc_local);
         
         counts.resize(nbTask);
         displs.resize(nbTask);
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
         std::cout << "=======================================================\n";
         auto debut_fft = std::chrono::high_resolution_clock::now();
         
-        mpi_build_local_vectors(methodefft2d.local_n0, methodefft2d.local_0_start, lf_local, Potentiel_V_local, Matrice_k_local, counts, displs);
+        mpi_build_local_vectors(methodefft2d.local_n0, methodefft2d.local_0_start, Mesh_local, Potentiel_V_local, Matrice_k_local, counts, displs);
         
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -70,34 +70,37 @@ int main(int argc, char* argv[]) {
 ///////////////////////////////////////////////////////////////////////////////////////////////        
         for (int t=0; t<param.Nt; t++){
             if (t % param.pas_enregistrement == 0) {
-                mpi_file_writting(lf_local, methodefft2d.local_n0, counts, displs);
+                mpi_file_writting(Mesh_local, methodefft2d.local_n0, counts, displs);
             }
+            
             for (int i = 0; i < methodefft2d.local_n0; i++) {
                 for (int m = 0; m < param.Ny; m++) {
-                    lf_local[i * param.Ny + m] *=  Potentiel_V_local[i*param.Ny+m];
+                    Mesh_local[i * param.Ny + m] *=  Potentiel_V_local[i*param.Ny+m];
+                    Mesh_local[i * param.Ny + m]+= (-1i * param.dt/2.0 * Potentiel_Inhomogene(lx[i+methodefft2d.local_0_start], ly[m], param.sigma, param.k0x, param.k0y, t*param.dt));
                 }
             }
 
             // 1. FFT locale sur chaque CPU
-            methodefft2d.appliquer_fft(lf_local, fourier_local);
+            methodefft2d.appliquer_fft(Mesh_local, Fourier_local);
 
             // 2. Filtrage dans l'espace K (Chaque CPU traite ses lignes locales)
             for (int i = 0; i < methodefft2d.local_n0; i++) {
                 for (int m = 0; m < param.Ny; m++) {
-                    fourier_local[i * param.Ny + m] *= Matrice_k_local[i*param.Ny+m];
+                    Fourier_local[i * param.Ny + m] *= Matrice_k_local[i*param.Ny+m];
                 }
             }
 
             // 3. IFFT locale sur chaque CPU
-            methodefft2d.appliquer_ifft(fourier_local, lf_local); 
+            methodefft2d.appliquer_ifft(Fourier_local, Mesh_local); 
             for (int i = 0; i < methodefft2d.local_n0; i++) {
                 for (int m = 0; m < param.Ny; m++) {
-                    lf_local[i * param.Ny + m] *=  Potentiel_V_local[i*param.Ny+m];
+                    Mesh_local[i * param.Ny + m] *=  Potentiel_V_local[i*param.Ny+m];
+                    Mesh_local[i * param.Ny + m] += (-1i * param.dt/2.0 * Potentiel_Inhomogene(lx[i+methodefft2d.local_0_start], ly[m], param.sigma, param.k0x, param.k0y, t*param.dt));
                 }
             }
         }
 
-        MPI_Gatherv(lf_local.data(), methodefft2d.local_n0 * param.Ny, MPI_C_DOUBLE_COMPLEX,
+        MPI_Gatherv(Mesh_local.data(), methodefft2d.local_n0 * param.Ny, MPI_C_DOUBLE_COMPLEX,
                 lf_global.data(), counts.data(), displs.data(), MPI_C_DOUBLE_COMPLEX,
                 0, MPI_COMM_WORLD);
         auto fin_fft = std::chrono::high_resolution_clock::now();
