@@ -1,4 +1,7 @@
-<img width="960" height="780" alt="Figure_2" src="https://github.com/user-attachments/assets/dee0027e-0231-422e-837e-001e751938fd" />
+<p align="center">
+  <img src="Fentes%20de%20Young/fentes_de_young_resultat.png" alt="Résultat Fentes de Young" width="600">
+</p>
+
 Project of quantum mechanics during master 2 Ams at Paris-Saclay. 
 It's the Young's interference experiment 1st version
 
