@@ -40,6 +40,8 @@ int main(int argc, char* argv[]) {
         fftw_mpi_init();
         MPI_Comm_size(MPI_COMM_WORLD, &nbTask);
         MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+        MPI_Barrier(MPI_COMM_WORLD);
+        double time_init = MPI_Wtime();
         if (param.pas_enregistrement<1){
             param.pas_enregistrement=1;
         }
@@ -58,9 +60,8 @@ int main(int argc, char* argv[]) {
 
         mpi_vector_coms_build(methodefft2d.local_n0, counts, displs);
         
-        std::cout << "My rank is: "<< myRank << " local_n0: "<< methodefft2d.local_n0 <<" local_0_start: "<< methodefft2d.local_0_start <<" alloc_local: "<< methodefft2d.alloc_local;
-        std::cout << "=======================================================\n";
-        auto debut_fft = std::chrono::high_resolution_clock::now();
+        // std::cout << "My rank is: "<< myRank << " local_n0: "<< methodefft2d.local_n0 <<" local_0_start: "<< methodefft2d.local_0_start <<" alloc_local: "<< methodefft2d.alloc_local;
+        // std::cout << "=======================================================\n";
         
         mpi_build_local_vectors(methodefft2d.local_n0, methodefft2d.local_0_start, Mesh_local, Potentiel_V_local, Matrice_k_local, counts, displs);
         
@@ -103,9 +104,9 @@ int main(int argc, char* argv[]) {
         MPI_Gatherv(Mesh_local.data(), methodefft2d.local_n0 * param.Ny, MPI_C_DOUBLE_COMPLEX,
                 lf_global.data(), counts.data(), displs.data(), MPI_C_DOUBLE_COMPLEX,
                 0, MPI_COMM_WORLD);
-        auto fin_fft = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> temps_total = fin_fft - debut_fft;
         fichier_donnees.close();
+        MPI_Barrier(MPI_COMM_WORLD);
+        double time_end = MPI_Wtime();
 
         if (myRank == 0) {
             double somme_carres = 0.0;
@@ -122,14 +123,15 @@ int main(int argc, char* argv[]) {
             proba_finale*=param.dx*param.dy;
             proba_initiale*=param.dx*param.dy;
 
-            // --- RESTAURATION DE L'AFFICHAGE BRUT DE BENCHMARK ---
             std::cout << "=======================================================\n";
-            std::cout << "               BENCHMARK DE PERFORMANCE                \n";
+            std::cout << "                       STATS MPI                       \n";
             std::cout << "=======================================================\n";
-            std::cout << "Temps total pour " << param.Nt << " pas de temps : " << temps_total.count() << " ms\n";
-            std::cout << "Temps moyen par itération : " << temps_total.count() / param.Nt << " ms\n";
-            std::cout << "=======================================================\n";
-            std::cout << "Nombre de points : " << static_cast<long long>(param.Nx * param.Ny * param.Nt) << "\n";
+            std::cout << "Nombre de CPUs : " << nbTask << "\n";
+            std::cout << "Nombre de points totaux : " << static_cast<long long>(param.Nx * param.Ny * param.Nt) << "\n";
+            std::cout << "Nombre de points spatiaux : " << static_cast<long long>(param.Nx * param.Ny) << "\n";
+            std::cout << "Nombre de points admissible au MPI : " << static_cast<long long>(param.Nx) << "\n";
+            std::cout << "Temps total pour " << param.Nt << " pas de temps : " << time_end - time_init << " s\n";
+            std::cout << "Temps moyen par itération : " << (time_end - time_init) / param.Nt << " s\n";
             std::cout << "=======================================================\n";
             std::cout << "Proba fianle: " << proba_finale <<std::endl;
             std::cout << "Proba initiale: " << proba_initiale <<std::endl;

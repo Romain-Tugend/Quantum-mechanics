@@ -37,10 +37,10 @@ def wall_times(path):
 
 def run_single_job(n):
     if TYPE == "strong":
-        # Grille fixe 2048x2048 répartie sur n cœurs (64 lignes/cœur à N=32)
+        # Grille fixe 8192x256 répartie sur n cœurs (64 lignes/cœur à N=32)
         nx, ny = BASE_NX * 4, BASE_NY 
     else:
-        # Charge par cœur constante (1024x1024 à N=1 jusqu'à ~5793x5793 à N=32)
+        # Charge par cœur constante (4096x256 à N=1 jusqu'à ~33 500 000 à N=32)
         scale = n
         nx = int(round(BASE_NX * scale))
         ny = int(round(BASE_NY ))
