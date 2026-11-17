@@ -8,18 +8,28 @@
 ///////////////////////////// POTENTIAL ENERGY FUNCTION ///////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-double V(double x, double y, double champ_E) {
-    const double V0 = 50.0;       // Hauteur des barrières de potentiel
-    const double a = 4.0;         // Pas du réseau (distance entre deux "atomes")
-    const double k_reseau = M_PI / a; 
-    double barriere_x = std::sin(k_reseau * x);
-    double barriere_y = std::sin(k_reseau * y);
+double V(double x, double y, double champ_E_x, double champ_E_y, double a_x, double a_y) {
+    const double V0 = 4.0;       // Hauteur des barrières de potentiel
+    const double k_reseau_x = M_PI / a_x; 
+    const double k_reseau_y = M_PI / a_y;
+    double barriere_x = std::sin(k_reseau_x * x);
+    double barriere_y = std::sin(k_reseau_y * y);
     double potentiel_periodique = V0 * (barriere_x * barriere_x + barriere_y * barriere_y);
     
-    double potentiel_electro=-champ_E*x;
+    double potentiel_electro=-champ_E_x*x-champ_E_y*y;
 
     return potentiel_periodique+potentiel_electro;
     
+}
+
+double V_hex(double x, double y, double Ex, double Ey) {
+    const double V0 = 15.0;
+    const double k = 2.0 * M_PI / 2.5;
+    double u1 = k * x;
+    double u2 = k * (-0.5 * x + 0.8660254 * y);
+    double u3 = k * (-0.5 * x - 0.8660254 * y);
+    double reseau = V0 * (std::cos(u1) + std::cos(u2) + std::cos(u3));
+    return reseau - Ex * x - Ey * y;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

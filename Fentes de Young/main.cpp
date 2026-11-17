@@ -19,7 +19,7 @@
 inline int myRank;
 inline int nbTask;
 
-std::ofstream fichier_donnees("evolution_schrodinger2D_mpi.bin", std::ios::binary);
+std::ofstream fichier_donnees("data/evolution_schrodinger2D_mpi.bin", std::ios::binary);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////// FUNCTIONS FOR TEST ///////////////////////////////////////////////
@@ -46,10 +46,11 @@ int main(int argc, char* argv[]) {
             param.pas_enregistrement=1;
         }
         FFT2D methodefft2d(param.Nx, param.Ny); 
+        // WE BUILD DATA FOR K THAT WILL BE USE FOR LAPLACIEN CALCULUS 
         mpi_build_global_vectors();
-        ///////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////// LOCAL VECTORS //////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////// LOCAL VECTORS //////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
         std::vector<std::complex<double>> Mesh_local(methodefft2d.alloc_local);
         std::vector<std::complex<double>> Potentiel_V_local(methodefft2d.alloc_local);
         std::vector<std::complex<double>> Matrice_k_local(methodefft2d.alloc_local);
@@ -57,48 +58,42 @@ int main(int argc, char* argv[]) {
         
         counts.resize(nbTask);
         displs.resize(nbTask);
-
+        // BUILD DATA FOR GATHERV WHEN WE NEED THE GLOBAL SOLUTION
         mpi_vector_coms_build(methodefft2d.local_n0, counts, displs);
         
-        // std::cout << "My rank is: "<< myRank << " local_n0: "<< methodefft2d.local_n0 <<" local_0_start: "<< methodefft2d.local_0_start <<" alloc_local: "<< methodefft2d.alloc_local;
-        // std::cout << "=======================================================\n";
-        
-        mpi_build_local_vectors(methodefft2d.local_n0, methodefft2d.local_0_start, Mesh_local, Potentiel_V_local, Matrice_k_local, counts, displs);
+        // WE BUILD LOCAL VECTORS FOR FFT 
+        mpi_build_local_vectors(methodefft2d.local_n0, methodefft2d.local_0_start, Mesh_local, Potentiel_V_local, Matrice_k_local);
         
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////// TIME LOOP /////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////        
         for (int t=0; t<param.Nt; t++){
+            // WE COMPUTE THE PSEUDO-SPECTRAL METHODE FOR DISCRETISATION WITH GALERKIN
+            // FOR A NEW TIME STEP WE DO ....
+            
+            // WRITTING THE SOLUTION FOR SPECIAL TIMES TO GET 36 FPS
             if (t % param.pas_enregistrement == 0) {
                 mpi_file_writting(Mesh_local, methodefft2d.local_n0, counts, displs);
             }
             
+            // 1.) POTENTIAL CALCULUS
             for (int i = 0; i < methodefft2d.local_n0; i++) {
                 for (int m = 0; m < param.Ny; m++) {
                     Mesh_local[i * param.Ny + m] *=  Potentiel_V_local[i*param.Ny+m];
-                    Mesh_local[i * param.Ny + m]+= (-1i * param.dt/2.0 * Potentiel_Inhomogene(lx[i+methodefft2d.local_0_start], ly[m], param.sigma, param.k0x, param.k0y, t*param.dt));
                 }
             }
-
-            // 1. FFT locale sur chaque CPU
+            // 2.) LAPLACIEN CALCULS WITH FFT
+            // FFT TO GET INTO FOURRIER SPACE
             methodefft2d.appliquer_fft(Mesh_local, Fourier_local);
-
-            // 2. Filtrage dans l'espace K (Chaque CPU traite ses lignes locales)
+            // THE LAPLACIEN IS JUST A MULTIPLICATION IN FOURRIER SPACE
             for (int i = 0; i < methodefft2d.local_n0; i++) {
                 for (int m = 0; m < param.Ny; m++) {
                     Fourier_local[i * param.Ny + m] *= Matrice_k_local[i*param.Ny+m];
                 }
             }
-
-            // 3. IFFT locale sur chaque CPU
+            // GET BACK INTO REAL SPACE WITH IFFT
             methodefft2d.appliquer_ifft(Fourier_local, Mesh_local); 
-            for (int i = 0; i < methodefft2d.local_n0; i++) {
-                for (int m = 0; m < param.Ny; m++) {
-                    Mesh_local[i * param.Ny + m] *=  Potentiel_V_local[i*param.Ny+m];
-                    Mesh_local[i * param.Ny + m] += (-1i * param.dt/2.0 * Potentiel_Inhomogene(lx[i+methodefft2d.local_0_start], ly[m], param.sigma, param.k0x, param.k0y, t*param.dt));
-                }
-            }
         }
 
         MPI_Gatherv(Mesh_local.data(), methodefft2d.local_n0 * param.Ny, MPI_C_DOUBLE_COMPLEX,
@@ -107,10 +102,7 @@ int main(int argc, char* argv[]) {
         fichier_donnees.close();
         MPI_Barrier(MPI_COMM_WORLD);
         double time_end = MPI_Wtime();
-
         if (myRank == 0) {
-            double somme_carres = 0.0;
-            double t_final = param.Nt * param.dt; 
             double proba_finale=0.0;
             double proba_initiale= 0.0;
 
@@ -141,3 +133,4 @@ int main(int argc, char* argv[]) {
         MPI_Finalize();
         return 0;
 }
+

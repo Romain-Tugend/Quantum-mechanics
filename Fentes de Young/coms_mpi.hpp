@@ -7,7 +7,7 @@
 extern std::vector<std::complex<double>> lf_local;
 extern std::vector<std::complex<double>> lf_global;
 extern std::ofstream fichier_donnees;
-std::ofstream fichier_potentiel("potentiel_2D.bin", std::ios::binary);
+std::ofstream fichier_potentiel("data/potentiel_2D.bin", std::ios::binary);
 extern int nbTask;
 extern int myRank;
 extern FFT2D methodefft2d;
@@ -50,9 +50,7 @@ void mpi_build_local_vectors(std::ptrdiff_t local_n0,
     std::ptrdiff_t local_n0_start,
     std::vector<std::complex<double>> &Mesh_local,
     std::vector<std::complex<double>> &Potentiel_V_local,
-    std::vector<std::complex<double>> &Matrice_k_local,
-    const std::vector<int> &counts, 
-    const std::vector<int> &displs)
+    std::vector<std::complex<double>> &Matrice_k_local)
 {
     
     for (int n = 0; n < local_n0; n++) {
@@ -61,7 +59,7 @@ void mpi_build_local_vectors(std::ptrdiff_t local_n0,
             Mesh_local[n * param.Ny + m] = 0.0;
             double x_curr = lx[n + local_n0_start];
             double y_curr = ly[m];
-            Potentiel_V_local[n * param.Ny + m] = std::exp((-1i * V(x_curr, y_curr) - W(x_curr, y_curr)) * (param.dt / 2.0));
+            Potentiel_V_local[n * param.Ny + m] = std::exp((-1i * V(x_curr, y_curr) - W(x_curr, y_curr)) * param.dt );
         }
     }
     if (myRank == 0) {

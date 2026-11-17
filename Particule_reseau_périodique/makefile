@@ -1,6 +1,6 @@
 CXX := mpicxx
 TARGET := a.out
-SRC := $(wildcard *.cpp)
+SRC := $(wildcard main.cpp)
 
 BREW_PREFIX := $(shell brew --prefix)
 FFTW_PREFIX := $(shell brew --prefix fftw)

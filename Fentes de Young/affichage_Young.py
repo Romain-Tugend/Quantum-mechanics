@@ -1,3 +1,4 @@
+import os
 import matplotlib
 
 matplotlib.use("Agg")  # Pas de fenêtre interactive
@@ -11,13 +12,14 @@ Ny = 256
 L = 20.0
 X_ECRAN = 7.0
 
-NOM_IMAGE_PNG = "fentes_de_young_resultat.png"
-NOM_GIF = "fentes_de_young.gif"
+os.makedirs("results", exist_ok=True)
+NOM_IMAGE_PNG = os.path.join("results", "fentes_de_young_resultat.png")
+NOM_GIF = os.path.join("results", "fentes_de_young.gif")
 FPS_GIF = 20
 MAX_FRAMES_GIF = 70  # Limite le poids du GIF pour GitHub (< 15 Mo)
 
 print("Chargement des données...")
-psi2_all = np.fromfile("evolution_schrodinger2D_mpi.bin", dtype=np.float64)
+psi2_all = np.fromfile("data/evolution_schrodinger2D_mpi.bin", dtype=np.float64)
 
 points_par_frame = Nx * Ny
 nb_frames = len(psi2_all) // points_par_frame
@@ -54,7 +56,7 @@ max_inst = max(np.max(profils_instantanes), 1e-12)
 
 # --- Chargement du potentiel ---
 print("Chargement du potentiel...")
-V_all = np.fromfile("potentiel_2D.bin", dtype=np.float64)
+V_all = np.fromfile("data/potentiel_2D.bin", dtype=np.float64)
 if V_all.size != Nx * Ny:
     raise ValueError(
         f"Le potentiel contient {V_all.size} valeurs, mais {Nx*Ny} sont"

@@ -57,13 +57,13 @@ void mpi_build_local_vectors(std::ptrdiff_t local_n0,
         for (int m = 0; m < param.Ny; m++) {
             Matrice_k_local[n*param.Ny+m]=std::exp(-1i * (param.dt*(k_physique_x[n+local_n0_start]+k_physique_y[m])));// WE STOCK DATA OF THE K FOR THE CALCULUS OF THE LAPLACIEN WITH THE FFT
             Mesh_local[n * param.Ny + m] = condition_initiale(lx[n+local_n0_start], ly[m], param.sigma, param.k0x, param.k0y);
-            Potentiel_V_local[n * param.Ny + m]= std::exp(-1i * V(lx[n+local_n0_start], ly[m], param.champ_E) * param.dt/2.0); // WE STOCK DATA OF THE POTENTIAL IN A MATRIX
+            Potentiel_V_local[n * param.Ny + m]= std::exp(-1i * V_hex(lx[n+local_n0_start], ly[m], param.champ_E_x, param.champ_E_y)* param.dt); //V(lx[n+local_n0_start], ly[m], param.champ_E_x, param.champ_E_y, param.a_x, param.a_y) * param.dt); // WE STOCK DATA OF THE POTENTIAL IN A MATRIX
         }
     }
     if (myRank==0){
         for (int n = 0; n < param.Nx; n++) {
             for (int m = 0; m < param.Ny; m++) {
-                double potentiel_norme = std::norm(V(lx[n],ly[m], param.champ_E));
+                double potentiel_norme = std::norm(V_hex(lx[n+local_n0_start], ly[m], param.champ_E_x, param.champ_E_y));//V(lx[n],ly[m], param.champ_E_x, param.champ_E_y, param.a_x, param.a_y));
                 fichier_potentiel.write(reinterpret_cast<char*>(&potentiel_norme), sizeof(double));
             }
         }
