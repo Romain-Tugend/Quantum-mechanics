@@ -1,7 +1,7 @@
 # 2D Time-Dependent Schrödinger Equation Solver (MPI / FFTW)
 
 <p align="center">
-  <img src="Fentes%20de%20Young/fentes_de_young.gif" alt="Young's Double-Slit Simulation" width="650">
+  <img src="Fentes%20de%20Young/results/fentes_de_young.gif" alt="Young's Double-Slit Simulation" width="650">
 </p>
 
 Project of quantum mechanics during **Master 2 Ams at Paris-Saclay**. 
@@ -14,7 +14,7 @@ We use the FFT from fftw librairy to solve the problem and the code is build for
 The Fentes de Young folder is the Young experiment, since the problem isn't periodique we have to add an other potential and solve the non homogen problem additionally we've added a source that repeat in time to simulate a laser.
 
 <p align="center">
-  <img src="Fentes%20de%20Young/fentes_de_young_resultat.png" alt="Young's Interference Pattern" width="650">
+  <img src="Fentes%20de%20Young/results/fentes_de_young_resultat.png" alt="Young's Interference Pattern" width="650">
 </p>
 
 ### 2. `Particule_reseau_périodique` (Particle in a Crystal Lattice)
