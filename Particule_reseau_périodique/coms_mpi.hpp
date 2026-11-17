@@ -7,7 +7,7 @@
 extern std::vector<std::complex<double>> lf_local;
 extern std::vector<std::complex<double>> lf_global;
 extern std::ofstream fichier_donnees;
-std::ofstream fichier_potentiel("potentiel_2D.bin", std::ios::binary);
+extern std::ofstream fichier_potentiel;
 extern int nbTask;
 extern int myRank;
 extern FFT2D methodefft2d;
@@ -50,25 +50,20 @@ void mpi_build_local_vectors(std::ptrdiff_t local_n0,
     std::ptrdiff_t local_n0_start,
     std::vector<std::complex<double>> &Mesh_local,
     std::vector<std::complex<double>> &Potentiel_V_local,
-    std::vector<std::complex<double>> &Matrice_k_local,
-    const std::vector<int> &counts, 
-    const std::vector<int> &displs)
+    std::vector<std::complex<double>> &Matrice_k_local)
 {
     
     for (int n = 0; n < local_n0; n++) {
         for (int m = 0; m < param.Ny; m++) {
             Matrice_k_local[n*param.Ny+m]=std::exp(-1i * (param.dt*(k_physique_x[n+local_n0_start]+k_physique_y[m])));// WE STOCK DATA OF THE K FOR THE CALCULUS OF THE LAPLACIEN WITH THE FFT
             Mesh_local[n * param.Ny + m] = condition_initiale(lx[n+local_n0_start], ly[m], param.sigma, param.k0x, param.k0y);
-            Potentiel_V_local[n * param.Ny + m]= std::exp(-1i * V(lx[n+local_n0_start], ly[m]) * param.dt/2.0); // WE STOCK DATA OF THE POTENTIAL IN A MATRIX
+            Potentiel_V_local[n * param.Ny + m]= std::exp(-1i * V(lx[n+local_n0_start], ly[m], param.champ_E) * param.dt/2.0); // WE STOCK DATA OF THE POTENTIAL IN A MATRIX
         }
     }
-    MPI_Gatherv(Potentiel_V_local.data(), local_n0 * param.Ny, MPI_C_DOUBLE_COMPLEX,
-                Potentiel_V_global.data(), counts.data(), displs.data(), MPI_C_DOUBLE_COMPLEX,
-                0, MPI_COMM_WORLD);
     if (myRank==0){
         for (int n = 0; n < param.Nx; n++) {
             for (int m = 0; m < param.Ny; m++) {
-                double potentiel_norme = std::norm(V(lx[n],ly[m]));
+                double potentiel_norme = std::norm(V(lx[n],ly[m], param.champ_E));
                 fichier_potentiel.write(reinterpret_cast<char*>(&potentiel_norme), sizeof(double));
             }
         }

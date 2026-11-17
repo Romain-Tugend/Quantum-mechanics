@@ -9,6 +9,7 @@
 #include <chrono> 
 #include <fstream>
 #include <mpi.h>
+#include <string>
 #include "fftw-mpi.hpp"
 #include "Parametres.hpp"
 

@@ -20,11 +20,12 @@ struct Parametres
     int Nt = static_cast<int>(T/dt); // NUMBER OF TEMPORAL POINTS
     int nombre_images=T*1.5*24; // FRAMES PER SECONDES 
     int pas_enregistrement=Nt/nombre_images; // RECORDING FREQUANCY
-    double k0x = 2*M_PI; // impulsion initiale vers la droite en +
-    double k0y = 2*M_PI; // impulsion initiale vers la droite en +
+    double k0x = M_PI/2.; // impulsion initiale vers la droite en +
+    double k0y = M_PI/2.; // impulsion initiale vers la droite en +
     double sigma = 3.0; // ECARTEMENT 
     double x_centre = -0.0; // -gauche; + droite
     double y_centre = -0.0;
+    double champ_E=0.; //VALUE OF ELETRIC FIELD FOR BLOCH OSSILATIONS
 };
 
 #endif /* PARAMETRES_HPP */

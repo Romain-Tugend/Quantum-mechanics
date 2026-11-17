@@ -11,7 +11,7 @@ We use the FFT from fftw librairy to solve the problem and the code is build for
 
 ### 1. `Fentes de Young` (Young's Double-Slit Experiment)
 
-The Fentes de Young folder is the Young experiment, since the problem isn't periodique we have to add an other potential and solve the non homogen problem and we had a source that repeat in time to simulate a laser.
+The Fentes de Young folder is the Young experiment, since the problem isn't periodique we have to add an other potential and solve the non homogen problem additionally we've added a source that repeat in time to simulate a laser.
 
 <p align="center">
   <img src="Fentes%20de%20Young/fentes_de_young_resultat.png" alt="Young's Interference Pattern" width="650">
@@ -26,7 +26,7 @@ The Particule_reseau_périodique is the simulation of a crystal lattice in this 
 
 ### 3. `Scalabilite` (HPC Benchmarks)
 
-The Scalabilité folder is the crystal lattice simulation when we have remove the writting of the solution and it's juste pure calculation. We then proceed to run a weak and strong scalabily test.
+The Scalabilité folder is the crystal lattice simulation where we have removed the writting part of the solution and it's juste pure calculation. We then proceed to run a weak and strong scalabily test.
 
 <p align="center">
   <img src="Scalabilite/weak_scaling.png" alt="Results weak scalabily" width="600">
