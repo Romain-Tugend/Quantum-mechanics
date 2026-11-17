@@ -24,6 +24,17 @@ The Particule_reseau_périodique is the simulation of a crystal lattice in this 
   <img src="Particule_reseau_p%C3%A9riodique/reseau_cristallin.gif" alt="2D Schrödinger Simulation in a Crystal Lattice" width="550">
 </p>
 
+We see the Bloch oscillations:
+
+<p align="center">
+  <img src="Particule_reseau_p%C3%A9riodique/results_Bloch/bloch_Ex_0.45_Ey_0.3.gif" alt="2D Schrödinger Simulation in a Crystal Lattice" width="550">
+</p>
+We can take a look at the expectation value for $x$ that is $\<x\>_{\psi}=\int\int x\|\psi\(x\)\|^2 dxdy$ and doing the same for $y$; we can look at the curve $(\<x\>_{\psi}(t), \<y\>_{\psi}(t))$ we see that the curve is a circle like.
+
+<p align="center">
+  <img src="Particule_reseau_p%C3%A9riodique/results_Bloch/bloch_Ex_0.45_Ey_0.3.gif" alt="Young's Interference Pattern" width="650">
+</p>
+
 ### 3. `Scalabilite` (HPC Benchmarks)
 
 The Scalabilité folder is the crystal lattice simulation where we have removed the writting part of the solution and it's juste pure calculation. We then proceed to run a weak and strong scalabily test.
