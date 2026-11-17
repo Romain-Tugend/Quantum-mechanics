@@ -30,10 +30,10 @@ We see the Bloch oscillations:
   <img src="Particule_reseau_p%C3%A9riodique/results_Bloch/bloch_Ex_0.45_Ey_0.3.gif" alt="2D Schrödinger Simulation in a Crystal Lattice" width="550">
 </p>
 
-We can take a look at the expectation value for $`x`$: $`\langle x \rangle_{\psi} = \iint x \lvert \psi(x, y) \rvert^2 \, dx \, dy`$, and doing the same for $`y`$, we can plot the trajectory $`(\langle x \rangle_{\psi}(t), \langle y \rangle_{\psi}(t))`$, that we see is circle-like.
+We can take a look at the expectation value for $`x`$: $`\langle x \rangle_{\psi} = \iint x \lvert \psi(x, y) \rvert^2 \, dx \, dy`$, and doing the same for $`y`$, we can plot the trajectory $`(\langle x \rangle_{\psi}(t),\, \langle y \rangle_{\psi}(t))`$, that we see is circle-like.
 
 <p align="center">
-  <img src="Particule_reseau_p%C3%A9riodique/results_Bloch/bloch_Ex_0.45_Ey_0.3.gif" alt="Young's Interference Pattern" width="650">
+  <img src="Particule_reseau_p%C3%A9riodique/results_Bloch/analyse_barycentre_Ex_0.45_Ey_0.3.png" alt="Young's Interference Pattern" width="650">
 </p>
 
 ### 3. `Scalabilite` (HPC Benchmarks)
