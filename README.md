@@ -16,16 +16,18 @@ We use the FFT from fftw librairy to solve the problem and the code is build for
 * **OpenMPI** & **FFTW3** (with MPI support enabled)
 * **Python 3** (`numpy`, `matplotlib`, `pillow`) for post-processing and animations
 
-* **macOS (Homebrew) :** `brew install open-mpi fftw python`
-* **Ubuntu / Debian :** `sudo apt install g++ libopenmpi-dev libfftw3-dev python3-pip`
+### Install dependencies 
+
+* **macOS (Homebrew) :** `brew install open-mpi fftw `
+* **Ubuntu / Debian :** `sudo apt install g++ libopenmpi-dev libfftw3-dev`
 
 ### Build & Run
 ```bash
 # Compile with the provided Makefile
 make
 
-# Run in parallel on 4 MPI processes for exemple if not specified (no -np $`N`$ then it's on all cpu)
-mpirun -np 4 ./a.out
+# Run in parallel on 4 MPI processes for exemple if not specified (no -np Number then it's on all cpu)
+mpirun -np 4 ./schrodinger #Champ_Ex Champ_Ey if needed
 ```
 
 ## Repository Structure
@@ -131,3 +133,25 @@ The Scalabilité folder is the crystal lattice simulation where we have removed 
 <p align="center">
   <img src="Scalabilite/strong_scaling.png" alt="Results strong scalabily" width="600">
 </p>
+
+Thanks to FFT, C++ speed and MPI we are able to solve big problem fast. For exemple this is the result of the simulation in "Particule_reseau_periodique" with a $`512\times512`$ mesh and $`42000`$ times steps, so a total of 11 billion points.
+
+```bash
+#Command
+make clean && make && mpirun ./schrodinger 0 0
+
+#Results
+Simulation lancée avec champ_E = 0 et 0
+=======================================================
+                       STATS MPI                       
+=======================================================
+Nombre de CPUs : 10
+Nombre de points totaux : 11010048000
+Nombre de points spatiaux : 262144
+Nombre de points admissible au MPI : 512
+Temps total pour 42000 pas de temps : 106.118 s
+Temps moyen par itération : 0.00252661 s
+=======================================================
+Proba fianle: 28.2742
+Proba initiale: 28.2742
+```
