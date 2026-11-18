@@ -39,17 +39,14 @@ int main(int argc, char* argv[]) {
         fftw_mpi_init();
         MPI_Comm_size(MPI_COMM_WORLD, &nbTask);
         MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-        if (argc >=3){
-            param.champ_E_x=atof(argv[1]);
-            param.champ_E_y=atof(argv[2]);
+        if (argc >= 2) {
+            param.W = atof(argv[1]); // Amplitude W du désordre
         }
         if (myRank == 0) {
-            std::cout << "Simulation lancée avec champ_E = " << param.champ_E_x <<" et "<< param.champ_E_y << std::endl;
-            // RENAME FILES 
-            std::string nom_fichier_donnes = "data_files/evolution_schrodinger2D_mpi_cas_E_x_" + std::to_string(param.champ_E_x) + "_Ey_" + std::to_string(param.champ_E_y) +".bin";
-            std::string nom_fichier_potential = "data_files/potentiel_2D_cas_E_x_" + std::to_string(param.champ_E_x)+ "_Ey_" + std::to_string(param.champ_E_y) + ".bin";
-            fichier_potentiel.open(nom_fichier_potential, std::ios::binary);
-            fichier_donnees.open(nom_fichier_donnes, std::ios::binary);
+            std::cout << "Simulation Anderson avec W = " << param.W << std::endl;
+            std::string suffixe = "_W_" + std::to_string(param.W) + ".bin";
+            fichier_potentiel.open("data_files/potentiel_2D" + suffixe, std::ios::binary);
+            fichier_donnees.open("data_files/evolution_schrodinger2D_mpi" + suffixe, std::ios::binary);
         }
         MPI_Barrier(MPI_COMM_WORLD);
         double time_init = MPI_Wtime();

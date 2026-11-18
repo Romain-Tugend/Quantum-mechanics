@@ -10,6 +10,7 @@
 #include <fstream>
 #include <mpi.h>
 #include <string>
+#include <random>
 #include "fftw-mpi.hpp"
 #include "Parametres.hpp"
 
